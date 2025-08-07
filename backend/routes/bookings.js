@@ -118,11 +118,24 @@ router.get('/check-lock', async (req, res) => {
     const updatedBookings = [];
 
     for (const slot of slots) {
+      console.log(`[DEBUG] Checking slot before unlock:`, {
+        slotId: slot._id,
+        isLocked: slot.isLocked,
+        isAvailable: slot.isAvailable,
+        bookingExpiresAt: slot.bookingExpiresAt,
+      });
       if (slot.isLockExpired()) {
         slot.isLocked = false;
         slot.lockedBy = null;
         slot.lockedAt = null;
         slot.bookingExpiresAt = null;
+        slot.isAvailable = true;
+        console.log(`[DEBUG] Unlocking slot:`, {
+          slotId: slot._id,
+          isLocked: slot.isLocked,
+          isAvailable: slot.isAvailable,
+          bookingExpiresAt: slot.bookingExpiresAt,
+        });
         await slot.save();
 
         const pendingBooking = await Booking.findOne({
@@ -131,6 +144,14 @@ router.get('/check-lock', async (req, res) => {
         });
         if (pendingBooking) {
           pendingBooking.paymentStatus = 'failed';
+          slot.isAvailable = true;
+          console.log(`[DEBUG] Marking pending booking as failed and setting slot available:`, {
+            slotId: slot._id,
+            isLocked: slot.isLocked,
+            isAvailable: slot.isAvailable,
+            bookingExpiresAt: slot.bookingExpiresAt,
+            bookingId: pendingBooking._id,
+          });
           await pendingBooking.save();
           updatedBookings.push(pendingBooking);
         }
@@ -223,6 +244,7 @@ router.get('/verify-payment', async (req, res) => {
       slot.isLocked = false;
       slot.lockedBy = null;
       slot.lockedAt = null;
+      slot.isAvailable = true;
       slot.bookingExpiresAt = null;
       await slot.save();
 

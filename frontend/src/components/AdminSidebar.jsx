@@ -60,27 +60,19 @@ const AdminSidebar = () => {
       </motion.button>
 
       <motion.aside
-        className="fixed top-0 left-0 h-screen w-64 bg-white shadow-xl border-r z-40 flex flex-col lg:translate-x-0"
+        className="fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 bg-white shadow-xl border-r z-40 flex flex-col lg:translate-x-0"
         initial={false}
         animate={isOpen || window.innerWidth >= 1024 ? "open" : "closed"}
         variants={sidebarVariants}
       >
-        <div className="px-6 py-5 flex items-center gap-3 text-blue-600 font-bold text-xl bg-gradient-to-r from-blue-50 to-gray-50">
-          <motion.div
-            initial={{ rotate: 0 }}
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, ease: "easeOut" }}
-          >
-            <LayoutDashboard size={26} />
-          </motion.div>
-          <span>SmartAdmin</span>
-        </div>
-
-        <div className="text-xs text-gray-500 font-semibold px-6 py-3 uppercase tracking-wider">
+        <span className="text-xl font-semibold text-gray-800">
+          Parking Superadmin
+        </span>
+        <div className="text-xs text-gray-500 font-semibold px-10 py-3 uppercase tracking-wider">
           Menu
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3">
+        <nav className="flex-1 overflow-y-auto px-2">
           <motion.ul
             className="space-y-2"
             initial="hidden"

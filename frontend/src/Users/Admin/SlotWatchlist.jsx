@@ -194,8 +194,8 @@ const SlotWatchlist = () => {
           position: "absolute",
           left: `${slot.x}px`,
           top: `${slot.y}px`,
-          width: 90,
-          height: 70,
+          width: 110,
+          height: 90,
         }}
         className={`p-2 border-l-4 rounded-lg shadow-md transition-all duration-300 hover:shadow-lg ${
           status === "Available"
@@ -205,6 +205,8 @@ const SlotWatchlist = () => {
             : "bg-yellow-50 border-yellow-500"
         }`}
         initial={{ opacity: 0, scale: 0.9 }}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >

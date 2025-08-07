@@ -412,8 +412,8 @@ const CustomizeSlotsPage = ({ user }) => {
                         position: "absolute",
                         left: `${slot.x}px`,
                         top: `${slot.y}px`,
-                        width: "80px",
-                        height: "80px",
+                        width: "110px",
+                        height: "90px",
                         cursor: "move",
                         outline:
                           selectedSlotId === slot.id

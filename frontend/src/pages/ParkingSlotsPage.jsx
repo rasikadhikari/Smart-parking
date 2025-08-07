@@ -21,7 +21,7 @@ const ParkingSlotpage = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  
+
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
@@ -178,7 +178,7 @@ const ParkingSlotpage = () => {
         bookingDuration: 15,
       });
       const updatedSlot = response.data;
-      console.log(updatedSlot,'updatedSlot after lock');
+      console.log(updatedSlot, "updatedSlot after lock");
       setSelectedSlot(updatedSlot);
       // setShowModal(true);
       setStartTime("");
@@ -252,7 +252,7 @@ const ParkingSlotpage = () => {
       console.log("Booking payload:", bookingPayload);
       const response = await api.post("/bookings", bookingPayload);
       setShowModal(false);
-      console.log(response.data, 'paymentUrl');
+      console.log(response.data, "paymentUrl");
 
       if (response.data?.paymentUrl) {
         window.location.href = response.data.paymentUrl;
@@ -263,12 +263,8 @@ const ParkingSlotpage = () => {
       // if (response.data?.bookingId) {
       // toast.success("Booking initiated successfully!");
       // }
-     
-      
-      
-     
     } catch (err) {
-      console.log(err.response?.data, 'err.response.data');
+      console.log(err.response?.data, "err.response.data");
       const errorMsg =
         err.response?.data?.message ||
         err.message ||
@@ -337,21 +333,17 @@ const ParkingSlotpage = () => {
           position: "absolute",
           left: `${slot.x}px`,
           top: `${slot.y}px`,
-          width: 90,
-          height: 70,
+          width: 110,
+          height: 90,
           cursor: isClickable ? "pointer" : "not-allowed",
         }}
         //&& handleSlotClick(slot)
-        onClick={() =>{ 
-          if(isClickable ){
+        onClick={() => {
+          if (isClickable) {
             setSelectedSlot(slot);
-            setShowModal(true)
+            setShowModal(true);
           }
-        
-        }
-
-
-        }
+        }}
         className={`p-2 border-l-4 rounded-lg shadow-md transition-all duration-300 ${
           status === "Available"
             ? "bg-green-50 border-green-500 hover:bg-green-100"

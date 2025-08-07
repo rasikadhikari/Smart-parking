@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import api from "../../services/api";
 import io from "socket.io-client";
 import {
@@ -14,7 +14,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Line, Pie } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 import AdminSidebar from "../../components/AdminSidebar";
 import {
   Users,
@@ -103,19 +103,26 @@ const AdminDashboard = () => {
           `/slots?parkingSpaceId=${parkingSpaceId}`
         );
         const slots = slotsResponse.data;
+
         const totalBookings = slots.length;
         const activeSlots = slots.filter((s) => s.isAvailable).length;
         const offlineBookings = slots.filter((s) => s.isLocked).length;
-        const totalRevenue = slots.reduce(
-          (sum, s) => sum + (s.payment?.amount || 0),
-          0
+
+        // 🟢 Fetch bookings for successful revenue
+        const bookingsResponse = await api.get(
+          `/bookings/admin?parkingSpaceId=${parkingSpaceId}`
         );
+        const bookings = bookingsResponse.data;
+
+        const successfulRevenue = bookings
+          .filter((b) => b.paymentStatus === "success")
+          .reduce((sum, b) => sum + (b.amount || b.duration * 10), 0);
 
         setStats({
           totalBookings,
           activeSlots,
           offlineBookings,
-          totalRevenue,
+          totalRevenue: successfulRevenue,
           totalParkingSpaces: 1,
         });
 
@@ -222,7 +229,7 @@ const AdminDashboard = () => {
           </div>
         </header>
 
-        <main className="flex-1 lg:pl-64 pt-6 px-4 md:px-6">
+        <main className="flex-1 lg:pl-64 pt-20 px-4 md:px-6">
           <motion.div
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-8 md:mb-12"
             initial="hidden"
@@ -234,7 +241,7 @@ const AdminDashboard = () => {
             }}
           >
             <Card
-              title="Total Bookings"
+              title="Total Slots"
               value={stats.totalBookings}
               icon={<Users size={24} />}
               color="bg-blue-100 text-blue-600"
@@ -261,6 +268,7 @@ const AdminDashboard = () => {
               color="bg-red-100 text-red-600"
               variants={cardVariants}
             />
+
             <Card
               title="Parking Spaces"
               value={stats.totalParkingSpaces}
@@ -270,94 +278,79 @@ const AdminDashboard = () => {
             />
           </motion.div>
 
+          {/* Synchronized Bar Chart for Card Stats */}
           <motion.div
-            className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 px-4 md:px-0 pb-6"
-            initial="hidden"
-            animate="visible"
-            variants={{
-              visible: {
-                transition: { staggerChildren: 0.2 },
-              },
-            }}
+            className="bg-white rounded-xl shadow-lg p-6 mt-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
           >
-            <motion.div
-              className="bg-white rounded-xl shadow-lg p-6"
-              variants={cardVariants}
-            >
-              <Line
-                data={{
-                  labels: chartData.labels,
-                  datasets: [
-                    {
-                      label: "Bookings Per Month",
-                      data: chartData.data,
-                      borderColor: "rgba(59, 130, 246, 1)",
-                      backgroundColor: "rgba(59, 130, 246, 0.2)",
-                      tension: 0.3,
-                      fill: true,
-                    },
-                  ],
-                }}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: { display: false },
-                    title: {
-                      display: true,
-                      text: "Monthly Bookings Trend",
-                      font: { size: 16, weight: "bold" },
-                      padding: { top: 10, bottom: 30 },
+            <Bar
+              data={{
+                labels: [
+                  "Total Slots",
+                  "Active Slots",
+                  "Offline Bookings",
+                  "Revenue (NPR)",
+                  "Parking Spaces",
+                ],
+                datasets: [
+                  {
+                    label: "Admin Stats",
+                    data: [
+                      stats.totalBookings,
+                      stats.activeSlots,
+                      stats.offlineBookings,
+                      Number(stats.totalRevenue.toFixed(2)),
+                      stats.totalParkingSpaces,
+                    ],
+                    backgroundColor: [
+                      "#bfdbfe", // blue-100
+                      "#bbf7d0", // green-100
+                      "#fef08a", // yellow-100
+                      "#fecaca", // red-100
+                      "#ede9fe", // purple-100
+                    ],
+                    borderColor: [
+                      "#2563eb", // blue-600
+                      "#22c55e", // green-600
+                      "#eab308", // yellow-600
+                      "#dc2626", // red-600
+                      "#7c3aed", // purple-600
+                    ],
+                    borderWidth: 2,
+                  },
+                ],
+              }}
+              options={{
+                responsive: true,
+                plugins: {
+                  legend: { display: false },
+                  title: {
+                    display: true,
+                    text: "Admin Overview",
+                    font: { size: 18, weight: "bold" },
+                    padding: { top: 10, bottom: 30 },
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function (context) {
+                        return `${context.dataset.label}: ${context.parsed.y}`;
+                      },
                     },
                   },
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      grid: { color: "rgba(0, 0, 0, 0.05)" },
-                    },
-                    x: {
-                      grid: { display: false },
-                    },
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    grid: { color: "rgba(0, 0, 0, 0.05)" },
                   },
-                }}
-              />
-            </motion.div>
-            <motion.div
-              className="bg-white rounded-xl shadow-lg p-6"
-              variants={cardVariants}
-            >
-              <Pie
-                data={{
-                  labels: ["Paid", "Pending", "Failed"],
-                  datasets: [
-                    {
-                      data: [
-                        paymentDistribution.paid,
-                        paymentDistribution.pending,
-                        paymentDistribution.failed,
-                      ],
-                      backgroundColor: ["#22c55e88", "#eab30888", "#ef444488"],
-                      borderColor: ["#22c55e", "#eab308", "#ef4444"],
-                      borderWidth: 2,
-                    },
-                  ],
-                }}
-                options={{
-                  responsive: true,
-                  plugins: {
-                    legend: {
-                      position: "top",
-                      labels: { font: { size: 14 } },
-                    },
-                    title: {
-                      display: true,
-                      text: "Payment Status Distribution",
-                      font: { size: 16, weight: "bold" },
-                      padding: { top: 10, bottom: 30 },
-                    },
+                  x: {
+                    grid: { display: false },
                   },
-                }}
-              />
-            </motion.div>
+                },
+              }}
+            />
           </motion.div>
         </main>
       </div>

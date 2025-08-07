@@ -96,90 +96,38 @@ io.on('connection', (socket) => {
   });
 });
 
-// const unlockExpiredSlots = async (io) => {
-//   try {
-//     const now = new Date();
-//     const expiredSlots = await Slot.find({
-//       // isLocked: true,
-//       isAvailable: false,
-//       bookingExpiresAt: { $lte: now },
-//     });
+const unlockExpiredSlots = async () => {
+  try {
+    const now = new Date();
+    const expiredSlots = await Slot.find({
+      isAvailable: false,
+      bookingExpiresAt: { $lte: now },
+    });
 
-//     console.log(expiredSlots,'expiredSlots');
-    
+    if (expiredSlots.length > 0) {
+      for (const slot of expiredSlots) {
+        slot.isLocked = false;
+        slot.lockedBy = null;
+        slot.lockedAt = null;
+        slot.bookingExpiresAt = null;
+        slot.isAvailable = true;
+        await slot.save();
 
-//     if (expiredSlots.length > 0) {
-//       for (const slot of expiredSlots) {
-//         slot.isLocked = false;
-//         slot.lockedBy = null;
-//         slot.lockedAt = null;
-//         slot.bookingExpiresAt = null;
-//         slot.isAvailable = true;
-//         await slot.save();
+        const parkingSpaceId = slot.parkingSpaceId;
+        io.emit('slotsUpdate', {
+          parkingSpaceId,
+          slots: await Slot.find({ parkingSpaceId }),
+        });
 
-//         const parkingSpaceId = slot.parkingSpaceId;
-//         io.emit('slotsUpdate', {
-//           parkingSpaceId,
-//           slots: await Slot.find({ parkingSpaceId }),
-//         });
-
-//         logger.info(`Automatically unlocked expired slot: ${slot.slotNumber} from parking space: ${parkingSpaceId}`);
-//       }
-//     }
-//   } catch (err) {
-//     logger.error('Error in unlockExpiredSlots job:', err.message);
-//   }
-// };
-// setInterval(unlockExpiredSlots, 60 * 1000);
-// unlockExpiredSlots(); // Optionally run once at startup
-
-
-// // Periodically unlock expired slots
-// const unlockExpiredSlots = async () => {
-//   try {
-//     const now = new Date();
-//     const expiredSlots = await Slot.find({
-//       isLocked: true,
-//       bookingExpiresAt: { $lte: now },
-//     });
-
-//     if (expiredSlots.length > 0) {
-//       await Slot.updateMany(
-//         { _id: { $in: expiredSlots.map(s => s._id) } },
-//         { $set: { isAvailable: true, isLocked: false, lockedBy: null, lockedAt: null, bookingExpiresAt: null } }
-//       );
-
-//       logger.info(`Unlocked ${expiredSlots.length} expired slots`);
-
-//       // Group expired slots by parking space and emit updates
-//       const slotGroups = {};
-//       for (const slot of expiredSlots) {
-//         const parkingSpaceId = slot.parkingSpaceId ? slot.parkingSpaceId.toString() : 'null';
-//         if (!slotGroups[parkingSpaceId]) slotGroups[parkingSpaceId] = [];
-//         slotGroups[parkingSpaceId].push(slot);
-//       }
-
-//       // Emit updates for each parking space
-//       for (const [parkingSpaceId, slots] of Object.entries(slotGroups)) {
-//         const updatedSlots = await Slot.find({ 
-//           parkingSpaceId: parkingSpaceId === 'null' ? null : parkingSpaceId 
-//         });
-//         io.emit('slotsUpdate', {
-//           parkingSpaceId: parkingSpaceId === 'null' ? null : parkingSpaceId,
-//           slots: updatedSlots
-//         });
-//       }
-//     }
-//   } catch (error) {
-//     logger.error('Error unlocking expired slots:', error.message);
-//   }
-// };
-
-// // Run unlock job every minute
-// setInterval(unlockExpiredSlots, 60 * 1000);
-// // Also run once on startup
-// unlockExpiredSlots();
-
+        logger.info(`Automatically unlocked expired slot: ${slot.slotNumber} from parking space: ${parkingSpaceId}`);
+      }
+    }
+  } catch (err) {
+    logger.error('Error in unlockExpiredSlots job:', err.message);
+  }
+};
+setInterval(unlockExpiredSlots, 60 * 1000);
+unlockExpiredSlots(); // Optionally run once at startup
 // Global error handler
 app.use((err, req, res, next) => {
   logger.error('Server error:', err.message);

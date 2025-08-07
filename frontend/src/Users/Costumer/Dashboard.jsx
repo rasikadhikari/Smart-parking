@@ -3,6 +3,7 @@ import SmartMap from "../../components/Map/SmartMap";
 import api from "../../services/api";
 import { useSocketListeners } from "../../hooks/useSocketListeners";
 import "../../../src/styles/Dashboard.css";
+import { useNavigate } from "react-router-dom";
 
 /**
  * @typedef {Object} Booking
@@ -43,6 +44,7 @@ const CustomerDashboard = () => {
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [sortOption, setSortOption] = useState("distance");
   const [mapCenter, setMapCenter] = useState([27.7172, 85.324]);
+  const navigate = useNavigate();
   // Use Socket.IO listeners
   useSocketListeners({ setSlots, setBookings, setParkingSpaces });
 
@@ -183,7 +185,12 @@ const CustomerDashboard = () => {
               <p>No recent bookings</p>
             )}
           </div>
-          <button className="btn-profile">View Profile</button>
+          <button
+            className="btn-profile"
+            onClick={() => navigate("/my-bookings")}
+          >
+            View Profile
+          </button>
         </div>
 
         <div className="filters">

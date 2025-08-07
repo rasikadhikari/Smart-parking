@@ -27,45 +27,74 @@ const Navbar = ({ handleLogout }) => {
     };
   }, []);
 
-  // Initialize socket and user
+  // Initialize socket and user with token validation
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      setImageSrc(parsedUser.image || defaultImage);
-
-      const socket = io("http://localhost:5002", {
-        auth: {
-          token: localStorage.getItem("token"),
-        },
-      });
-
-      socket.emit("join", parsedUser._id);
-
-      const fetchNotifications = async () => {
+    const validateAndSetUser = async () => {
+      const userData = localStorage.getItem("user");
+      console.log("userData", userData);
+      const token = localStorage.getItem("token");
+      console.log("token", token);
+      if (userData && token) {
         try {
-          const response = await api.get("/notifications/received", {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
+          // Validate token with backend
+          const response = await api.get("/auth/validate-token");
+          console.log("user response--->", response.data);
+          if (!response.data.valid) {
+            // Invalid token, clear storage and user
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+            setUser(null);
+            setImageSrc(defaultImage);
+            return;
+          }
+          // Token valid, set user
+          const parsedUser = JSON.parse(userData);
+          setUser(parsedUser);
+          setImageSrc(parsedUser.image || defaultImage);
+
+          const socket = io("http://localhost:5002", {
+            auth: {
+              token: localStorage.getItem("token"),
             },
           });
-          setNotifications(response.data);
+
+          socket.emit("join", parsedUser._id);
+
+          const fetchNotifications = async () => {
+            try {
+              const response = await api.get("/notifications/received", {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+              });
+              setNotifications(response.data);
+            } catch (error) {
+              console.error("Error fetching notifications:", error);
+            }
+          };
+
+          fetchNotifications();
+
+          socket.on("newNotification", (newNotif) => {
+            setNotifications((prev) => [newNotif, ...prev]);
+          });
+
+          return () => {
+            socket.disconnect();
+          };
         } catch (error) {
-          console.error("Error fetching notifications:", error);
+          // Network or other error, treat as invalid
+          localStorage.removeItem("user");
+          localStorage.removeItem("token");
+          setUser(null);
+          setImageSrc(defaultImage);
         }
-      };
-
-      fetchNotifications();
-
-      socket.on("newNotification", (newNotif) => {
-        setNotifications((prev) => [newNotif, ...prev]);
-      });
-
-      return () => {
-        socket.disconnect();
-      };
-    }
+      } else {
+        setUser(null);
+        setImageSrc(defaultImage);
+      }
+    };
+    validateAndSetUser();
   }, []);
 
   // Mark all as read
@@ -107,7 +136,7 @@ const Navbar = ({ handleLogout }) => {
   const profilePath = user?.role === "admin" ? "/admin-profile" : "/profile";
 
   return (
-    <nav className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center shadow-md">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white px-6 py-4 flex justify-between items-center shadow-md">
       <div>
         <Link to="/" className="text-2xl font-bold">
           Smart Parking

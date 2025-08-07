@@ -1,0 +1,117 @@
+/* Custom styles for reusable components */
+
+/* Input field styles */
+.input-field {
+  border: 1px solid #d1d5db; /* Tailwind gray-300 */
+  border-radius: 8px;
+  padding: 12px;
+  width: 100%;
+  color: #374151; /* Tailwind gray-700 */
+}
+
+.input-field.bg-gray-100 {
+  background: #f3f4f6; /* Tailwind gray-100 */
+}
+
+/* Button styles */
+.primary-button {
+  background-color: #2563eb; /* Tailwind blue-600 */
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+  width: 100%;
+}
+
+.primary-button:hover {
+  background-color: #1d4ed8; /* Tailwind blue-700 */
+}
+
+.primary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondary-button {
+  background-color: #e5e7eb; /* Tailwind gray-200 */
+  color: #374151; /* Tailwind gray-700 */
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.secondary-button:hover {
+  background-color: #d1d5db; /* Tailwind gray-300 */
+  transform: translateY(-2px);
+}
+
+/* Modal styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6b7280; /* Tailwind gray-500 */
+}
+
+.modal-close:hover {
+  color: #374151; /* Tailwind gray-700 */
+}
+
+/* Parking slot styles */
+.parking-slot {
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid #d1d5db; /* Tailwind gray-300 */
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
+  background: #f3f4f6; /* Tailwind gray-100 */
+  color: #374151; /* Tailwind gray-700 */
+}
+
+.parking-slot:hover {
+  transform: scale(1.05);
+}
+
+.parking-slot.selected {
+  background: #2563eb; /* Tailwind blue-600 */
+  color: white;
+  border: 1px solid #2563eb; /* Tailwind blue-600 */
+}
+
+.parking-slot.disabled {
+  background: #9ca3af; /* Tailwind gray-400 */
+  color: #374151; /* Tailwind gray-700 */
+  border: 1px solid #6b7280; /* Tailwind gray-500 */
+  cursor: not-allowed;
+}

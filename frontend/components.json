@@ -1,0 +1,38 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "default",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "tailwind.config.js",
+    "css": "src/index.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils"
+  },
+  "components": [
+    {
+      "name": "Button",
+      "path": "@/components/ui/button.tsx",
+      "description": "A customizable button component."
+    },
+    {
+      "name": "Input",
+      "path": "@/components/ui/input.tsx",
+      "description": "A customizable input field."
+    },
+    {
+      "name": "Card",
+      "path": "@/components/ui/card.tsx",
+      "description": "A card component for displaying content."
+    },
+    {
+      "name": "Modal",
+      "path": "@/components/ui/modal.tsx",
+      "description": "A modal dialog component."
+    }
+  ]
+}

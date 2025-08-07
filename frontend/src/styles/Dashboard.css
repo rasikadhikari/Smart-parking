@@ -1,0 +1,96 @@
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f9fafb;
+  font-family: Arial, sans-serif;
+}
+
+.sidebar {
+  width: 280px;
+  padding: 20px;
+  background-color: white;
+  border-right: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sidebar-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #111827;
+}
+
+.account-info,
+.filters,
+.notifications {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.username {
+  color: #2563eb;
+}
+
+.btn-profile {
+  margin-top: 8px;
+  background-color: #2563eb;
+  color: white;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.sort-dropdown {
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.notification-item {
+  color: #111827;
+  background-color: #f3f4f6;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.dashboard-map {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.dashboard-header {
+  margin-bottom: 10px;
+}
+
+.map-wrapper {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  z-index: 0;
+}
+.last-booking-box {
+  background-color: #f0f4ff;
+  border: 1px solid #2563eb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 20px;
+  color: #1e3a8a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-size: 14px;
+}
+
+.last-booking-box h3 {
+  margin-bottom: 12px;
+  font-size: 18px;
+  color: #1d4ed8;
+}

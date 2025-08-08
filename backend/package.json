@@ -19,6 +19,7 @@
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "node-schedule": "^2.1.1",
+    "nodemailer": "^7.0.5",
     "pdfkit": "^0.17.1",
     "qrcode": "^1.5.4",
     "react-qr-code": "^2.0.15",

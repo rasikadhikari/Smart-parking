@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
 import api from "../../services/api";
 import io from "socket.io-client";
 
@@ -14,7 +14,7 @@ const socket = io("http://localhost:5002", {
 const MyBookingsPage = ({ user, bookings: initialBookings }) => {
   const [bookings, setBookings] = useState(initialBookings || []);
   const [parkingSpaces, setParkingSpaces] = useState([]);
-  const [filterParkingSpaceId, setFilterParkingSpaceId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -31,7 +31,6 @@ const MyBookingsPage = ({ user, bookings: initialBookings }) => {
     const fetchParkingSpaces = async () => {
       try {
         const response = await api.get("/parking-spaces");
-        // Transform parking spaces to include latitude and longitude
         const transformedSpaces = response.data.map((space) => ({
           ...space,
           latitude:
@@ -105,10 +104,32 @@ const MyBookingsPage = ({ user, bookings: initialBookings }) => {
     };
   }, [user, navigate, initialBookings]);
 
+  const handleCancelBooking = async (bookingId) => {
+    if (!window.confirm("Are you sure you want to cancel this booking?"))
+      return;
+
+    try {
+      await api.post(`/bookings/cancel/${bookingId}`);
+      // Update bookings state to reflect the cancelled status
+      setBookings((prevBookings) =>
+        prevBookings.map((booking) =>
+          booking._id === bookingId
+            ? { ...booking, paymentStatus: "cancelled" }
+            : booking
+        )
+      );
+      console.log(`Booking ${bookingId} cancelled successfully`);
+    } catch (err) {
+      console.error("Error cancelling booking:", err.message);
+      setError(err.response?.data?.message || "Error cancelling booking");
+    }
+  };
+
   const statusColors = {
     success: "bg-green-100 text-green-800",
     pending: "bg-yellow-100 text-yellow-800",
     failed: "bg-red-100 text-red-800",
+    cancelled: "bg-gray-100 text-gray-800",
   };
 
   const getParkingSpace = (parkingSpaceId) => {
@@ -127,12 +148,22 @@ const MyBookingsPage = ({ user, bookings: initialBookings }) => {
     return "N/A";
   };
 
-  const filteredBookings = filterParkingSpaceId
-    ? bookings.filter(
-        (booking) =>
-          (booking.parkingSpaceId?.toString() || null) === filterParkingSpaceId
-      )
-    : bookings;
+  const filteredBookings = bookings.filter((booking) => {
+    if (!searchQuery) return true;
+    const searchLower = searchQuery.toLowerCase();
+    const parkingSpace = getParkingSpace(booking.parkingSpaceId);
+    return (
+      booking._id.toLowerCase().includes(searchLower) ||
+      parkingSpace.name.toLowerCase().includes(searchLower) ||
+      getLocationString(parkingSpace).toLowerCase().includes(searchLower) ||
+      (booking.userId?.fullName || "You").toLowerCase().includes(searchLower) ||
+      (booking.slotId?.slotNumber || "N/A")
+        .toLowerCase()
+        .includes(searchLower) ||
+      booking.vehicleNumber?.toLowerCase().includes(searchLower) ||
+      booking.vehicleType?.toLowerCase().includes(searchLower)
+    );
+  });
 
   if (loading) {
     return <div className="text-center mt-12">Loading...</div>;
@@ -147,7 +178,7 @@ const MyBookingsPage = ({ user, bookings: initialBookings }) => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="mb-8 flex items-center justify-between">
         <h2 className="text-3xl font-bold text-gray-800">📋 My Bookings</h2>
         <Link
@@ -160,63 +191,63 @@ const MyBookingsPage = ({ user, bookings: initialBookings }) => {
       </div>
       <div className="mb-6">
         <label
-          htmlFor="filterParkingSpaceId"
+          htmlFor="searchQuery"
           className="block text-gray-700 font-semibold mb-2"
         >
-          Filter by Parking Space
+          Search Bookings
         </label>
-        <select
-          id="filterParkingSpaceId"
-          value={filterParkingSpaceId}
-          onChange={(e) => setFilterParkingSpaceId(e.target.value)}
-          className="w-full sm:w-64 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">All Parking Spaces</option>
-          <option value="null">Default Parking Lot</option>
-          {parkingSpaces.map((space) => (
-            <option key={space._id} value={space._id}>
-              {space.name} {getLocationString(space)}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <input
+            id="searchQuery"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by Booking ID, Location, Name, Slot, or Vehicle..."
+            className="w-full sm:w-96 p-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <Search
+            size={20}
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+          />
+        </div>
       </div>
       {filteredBookings.length === 0 ? (
         <div className="text-center py-16 text-gray-500">
           <p className="text-xl">
-            You don’t have any bookings for this parking space.
+            No bookings found matching your search criteria.
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto shadow rounded-lg border border-gray-200">
+        <div className="overflow-x-auto shadow-2xl rounded-xl border border-gray-200 max-w-[90vw] md:max-w-[85vw] lg:max-w-[80vw]">
           <table className="min-w-full bg-white divide-y divide-gray-200 text-sm">
             <thead className="bg-blue-50 text-gray-700 sticky top-0 z-10">
               <tr>
-                <th className="px-6 py-3 text-left font-semibold">
+                <th className="px-6 py-4 text-left font-semibold">
                   Booking ID
                 </th>
-                <th className="px-6 py-3 text-left font-semibold">
+                <th className="px-6 py-4 text-left font-semibold">
                   Booked For
                 </th>
-                <th className="px-6 py-3 text-left font-semibold">
+                <th className="px-6 py-4 text-left font-semibold">
                   Parking Space
                 </th>
-                <th className="px-6 py-3 text-left font-semibold">Location</th>
-                <th className="px-6 py-3 text-left font-semibold">
+                <th className="px-6 py-4 text-left font-semibold">Location</th>
+                <th className="px-6 py-4 text-left font-semibold">
                   Slot Number
                 </th>
-                <th className="px-6 py-3 text-left font-semibold">
+                <th className="px-6 py-4 text-left font-semibold">
                   Start Time
                 </th>
-                <th className="px-6 py-3 text-left font-semibold">End Time</th>
-                <th className="px-6 py-3 text-left font-semibold">Duration</th>
-                <th className="px-6 py-3 text-left font-semibold">
+                <th className="px-6 py-4 text-left font-semibold">End Time</th>
+                <th className="px-6 py-4 text-left font-semibold">Duration</th>
+                <th className="px-6 py-4 text-left font-semibold">
                   Amount (NPR)
                 </th>
-                <th className="px-6 py-3 text-left font-semibold">Status</th>
-                <th className="px-6 py-3 text-left font-semibold">
+                <th className="px-6 py-4 text-left font-semibold">Status</th>
+                <th className="px-6 py-4 text-left font-semibold">
                   Booking Type
                 </th>
-                <th className="px-6 py-3 text-left font-semibold">Actions</th>
+                <th className="px-6 py-4 text-left font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -261,7 +292,7 @@ const MyBookingsPage = ({ user, bookings: initialBookings }) => {
                           booking.bookingType.slice(1)
                         : "N/A"}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 flex gap-2">
                       <button
                         onClick={() =>
                           navigate(`/booking-details/${booking._id}`)
@@ -269,6 +300,18 @@ const MyBookingsPage = ({ user, bookings: initialBookings }) => {
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition"
                       >
                         View Details
+                      </button>
+                      <button
+                        onClick={() => handleCancelBooking(booking._id)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-md text-sm font-medium transition"
+                        disabled={
+                          booking.paymentStatus?.toLowerCase() ===
+                            "cancelled" ||
+                          booking.paymentStatus?.toLowerCase() === "failed" ||
+                          new Date(booking.endTime) < new Date()
+                        }
+                      >
+                        Cancel Booking
                       </button>
                     </td>
                   </tr>

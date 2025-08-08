@@ -298,7 +298,7 @@ const SlotWatchlist = () => {
               <motion.div className="mb-6" variants={sectionVariants}>
                 <label
                   htmlFor="parkingSpaceSelect"
-                  className="block text-lg font-semibold text-gray-700 mb-2 flex items-center gap-2"
+                  className="text-lg font-semibold text-gray-700 mb-2 flex items-center gap-2"
                 >
                   <Lock className="h-5 w-5" />
                   Select Parking Space:

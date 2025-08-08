@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Booking = require('../models/Booking');
+const Notification = require('../models/Notification');
 const Slot = require('../models/Slot');
 const ParkingSpace = require('../models/ParkingSpace');
 const User = require('../models/User');
@@ -10,6 +11,18 @@ const Stripe = require('stripe');
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const path = require('path');
 const PDFDocument = require('pdfkit');
+const nodemailer = require('nodemailer');
+
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.mailtrap.io',
+  port: 465,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
 
 // Fetch all bookings for admin view
 router.get('/admin', authenticateToken, authorizeRole(['admin', 'superadmin']), async (req, res) => {
@@ -306,6 +319,74 @@ router.get('/payment-failed', async (req, res) => {
   } catch (err) {
     console.error('Error handling payment failure:', err.message);
     res.status(500).json({ message: 'Error handling payment failure', error: err.message });
+  }
+});
+router.get('/check-expired', async (req, res) => {
+  try {
+    const now = new Date();
+    const expiredBookings = await Booking.find({
+      endTime: { $lt: now },
+      paymentStatus: 'success',
+      notifiedExpired: { $ne: true },
+    }).populate('userId slotId parkingSpaceId');
+
+    const updatedBookings = [];
+
+    for (const booking of expiredBookings) {
+      // Mark booking as notified
+      booking.notifiedExpired = true;
+      await booking.save();
+      updatedBookings.push(booking);
+
+      // Ensure the associated slot is available
+      const slot = await Slot.findById(booking.slotId);
+      if (slot && !slot.isAvailable) {
+        slot.isAvailable = true;
+        slot.isLocked = false;
+        slot.lockedBy = null;
+        slot.lockedAt = null;
+        slot.bookingExpiresAt = null;
+        await slot.save();
+      }
+
+      // Create a notification for the user
+      if (booking.userId) {
+        const notification = await Notification.create({
+          senderId: "6890ee0a97894a12e13f3c1a", 
+          recipients: [booking.userId],
+          title: 'Booking Expired',
+          message: `Your booking (ID: ${booking._id}) for ${booking.parkingSpaceId?.name || 'Default Parking Lot'}, Slot ${booking.slotId?.slotNumber || 'N/A'} has expired at ${new Date(booking.endTime).toLocaleString()}.`,
+          emote: '🕒',
+          targetRoles: 'customer',
+        });
+
+        const io = req.app.get('io');
+        io.to(booking.userId.toString()).emit('newNotification', notification);
+        console.log(`Sent expiration notification for booking ${booking._id} to user ${booking.userId.toString()}`);
+      }
+    }
+
+    if (updatedBookings.length > 0) {
+      const io = req.app.get('io');
+      const bookingGroups = {};
+      for (const booking of updatedBookings) {
+        const parkingSpaceId = booking.parkingSpaceId ? booking.parkingSpaceId.toString() : 'null';
+        if (!bookingGroups[parkingSpaceId]) bookingGroups[parkingSpaceId] = [];
+        bookingGroups[parkingSpaceId].push(booking);
+      }
+      for (const [parkingSpaceId, bookings] of Object.entries(bookingGroups)) {
+        io.emit('bookingsUpdate', {
+          parkingSpaceId: parkingSpaceId === 'null' ? null : parkingSpaceId,
+          bookings: await Booking.find({ _id: { $in: bookings.map((b) => b._id) } }).populate('slotId userId'),
+        });
+      }
+    }
+
+    console.log(`Checked expired bookings, notified: ${updatedBookings.length}`);
+    res.json({ message: 'Checked for expired bookings', notified: updatedBookings.length });
+  } catch (err) {
+    console.error('Error checking expired bookings:', err.message);
+    res.status(500).json({ message: 'Error checking expired bookings', error: err.message });
   }
 });
 
@@ -785,6 +866,91 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error deleting booking:', err.message);
     res.status(500).json({ message: 'Error deleting booking', error: err.message });
+  }
+});
+
+
+
+
+
+router.post('/cancel/:id', authenticateToken, async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id).populate({
+      path: 'slotId',
+      select: 'slotNumber location parkingSpaceId',
+      populate: { path: 'parkingSpaceId', select: 'name location' },
+    });
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    if (booking.userId?._id.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to cancel this booking' });
+    }
+
+    if (booking.paymentStatus === 'cancelled') {
+      return res.status(400).json({ message: 'Booking is already cancelled' });
+    }
+
+    const slot = await Slot.findById(booking.slotId);
+    if (!slot) {
+      return res.status(404).json({ message: 'Associated slot not found' });
+    }
+
+    if (
+      (booking.paymentStatus === 'success' || booking.paymentStatus === 'pending') &&
+      new Date() <= new Date(booking.endTime)
+    ) {
+      slot.isAvailable = true;
+      slot.isLocked = false;
+      slot.lockedBy = null;
+      slot.lockedAt = null;
+      slot.bookingExpiresAt = null;
+      await slot.save();
+    }
+
+    booking.paymentStatus = 'cancelled';
+    await booking.save();
+
+    // Create a cancellation notification
+    const notification = await Notification.create({
+      senderId: null,
+      recipients: [booking.userId],
+      title: 'Booking Cancelled',
+      message: `Your booking (ID: ${booking._id}) for ${booking.parkingSpaceId?.name || 'Default Parking Lot'}, Slot ${booking.slotId?.slotNumber || 'N/A'} has been cancelled.`,
+      emote: '🚫',
+      targetRoles: 'customer',
+    });
+
+    const io = req.app.get('io');
+    io.to(booking.userId.toString()).emit('newNotification', notification);
+
+    // Send email notification
+    if (booking.userId?.email) {
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: booking.userId.email,
+        subject: 'Parking Booking Cancelled',
+        text: `Your booking (ID: ${booking._id}) for ${booking.parkingSpaceId?.name || 'Default Parking Lot'}, Slot ${booking.slotId?.slotNumber || 'N/A'} has been cancelled.`,
+      };
+      await transporter.sendMail(mailOptions);
+      console.log(`Sent cancellation email to ${booking.userId.email} for booking ${booking._id}`);
+    }
+
+    io.emit('slotsUpdate', {
+      parkingSpaceId: slot.parkingSpaceId ? slot.parkingSpaceId.toString() : null,
+      slots: await Slot.find({ parkingSpaceId: slot.parkingSpaceId }),
+    });
+    io.emit('bookingsUpdate', {
+      parkingSpaceId: slot.parkingSpaceId ? slot.parkingSpaceId.toString() : null,
+      bookings: await Booking.find({ parkingSpaceId: booking.parkingSpaceId }).populate('slotId userId'),
+    });
+
+    console.log(`Cancelled booking: ${booking._id}, slot ${slot._id} made available`);
+    res.json({ message: 'Booking cancelled successfully' });
+  } catch (err) {
+    console.error('Error cancelling booking:', err.message);
+    res.status(500).json({ message: 'Error cancelling booking', error: err.message });
   }
 });
 

@@ -377,7 +377,7 @@ const BookingPage = ({ user, slots, parkingSpaceId }) => {
             <motion.div className="text-center mb-6" variants={fieldVariants}>
               <Link
                 to="/parking-spaces"
-                className="inline-block bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2"
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2"
               >
                 <ArrowLeft size={18} />
                 Back to Parking Spaces
@@ -415,7 +415,7 @@ const BookingPage = ({ user, slots, parkingSpaceId }) => {
           >
             {isAdmin && (
               <motion.div variants={fieldVariants}>
-                <label className="block text-gray-700 font-semibold mb-2 flex items-center gap-2">
+                <label className="text-gray-700 font-semibold mb-2 flex items-center gap-2">
                   <User size={18} />
                   Booking For
                 </label>
@@ -541,7 +541,7 @@ const BookingPage = ({ user, slots, parkingSpaceId }) => {
             <motion.div variants={fieldVariants}>
               <label
                 htmlFor="vehicleType"
-                className="block text-gray-700 font-semibold mb-2 flex items-center gap-2"
+                className="text-gray-700 font-semibold mb-2 flex items-center gap-2"
               >
                 <CarFront size={18} />
                 Vehicle Type
@@ -564,7 +564,7 @@ const BookingPage = ({ user, slots, parkingSpaceId }) => {
             <motion.div variants={fieldVariants}>
               <label
                 htmlFor="startTime"
-                className="block text-gray-700 font-semibold mb-2 flex items-center gap-2"
+                className="text-gray-700 font-semibold mb-2 flex items-center gap-2"
               >
                 <Clock size={18} />
                 Start Time
@@ -582,7 +582,7 @@ const BookingPage = ({ user, slots, parkingSpaceId }) => {
             <motion.div variants={fieldVariants}>
               <label
                 htmlFor="endTime"
-                className="block text-gray-700 font-semibold mb-2 flex items-center gap-2"
+                className="text-gray-700 font-semibold mb-2 flex items-center gap-2"
               >
                 <Clock size={18} />
                 End Time

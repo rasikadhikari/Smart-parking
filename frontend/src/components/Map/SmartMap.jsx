@@ -133,8 +133,23 @@ const SmartMap = () => {
     fetchParkingSpaces();
   }, []);
 
-  const handleCheckSlots = (parkingSpaceId) => {
-    navigate(`/slots/${parkingSpaceId}`, { state: { parkingSpaceId } });
+  const handleCheckSlots = async (parkingSpaceId) => {
+    try {
+      // Fetch slots for this parking space
+      const res = await api.get(`/slots?parkingSpaceId=${parkingSpaceId}`);
+
+      if (!res.data || res.data.length === 0) {
+        // No slots — show under construction message
+        alert("🚧 This parking space is under construction.");
+        return;
+      }
+
+      // Slots exist — navigate to slots page
+      navigate(`/slots/${parkingSpaceId}`, { state: { parkingSpaceId } });
+    } catch (err) {
+      console.error("Error checking slots:", err);
+      alert("❌ Failed to check slots. Please try again.");
+    }
   };
 
   return (

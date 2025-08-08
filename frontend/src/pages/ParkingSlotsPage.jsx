@@ -21,7 +21,6 @@ const ParkingSlotpage = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState(null);
-
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
@@ -372,34 +371,31 @@ const ParkingSlotpage = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4 text-blue-700">
-        Select Parking Space
-      </h2>
+      {(() => {
+        // Find the selected parking space object from the list
+        const selectedParkingSpace = parkingSpaces?.find(
+          (space) => space._id === selectedParkingSpaceId
+        );
+
+        if (!selectedParkingSpace) return null;
+
+        const { latitude, longitude } = getCoordinates(selectedParkingSpace);
+
+        return (
+          <h2 className="text-3xl font-bold mb-6 text-blue-700">
+            🚗 Welcome to {selectedParkingSpace.name}
+            {latitude != null && longitude != null
+              ? ` (${latitude.toFixed(3)}, ${longitude.toFixed(3)})`
+              : ""}
+          </h2>
+        );
+      })()}
 
       {error && (
         <div className="bg-red-50 text-red-700 border border-red-200 px-4 py-3 rounded mb-6">
           {error}
         </div>
       )}
-
-      <select
-        value={selectedParkingSpaceId || ""}
-        onChange={(e) => setSelectedParkingSpaceId(e.target.value)}
-        className="p-3 border border-gray-300 rounded-lg w-full max-w-md mb-6 focus:ring-2 focus:ring-blue-500"
-      >
-        <option value="">Select a parking space</option>
-        {parkingSpaces.map((space) => {
-          const { latitude, longitude } = getCoordinates(space);
-          return (
-            <option key={space._id} value={space._id}>
-              {space.name}{" "}
-              {latitude != null && longitude != null
-                ? `(${latitude.toFixed(3)}, ${longitude.toFixed(3)})`
-                : "(No coordinates)"}
-            </option>
-          );
-        })}
-      </select>
 
       <div className="bg-gray-100 border rounded-xl p-6 shadow-inner relative overflow-hidden w-full h-full min-h-screen">
         {loading ? (
